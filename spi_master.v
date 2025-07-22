@@ -41,10 +41,10 @@ always@(negedge n_reset, posedge clock)
 always@(*) begin
     next_state = present_state;
     case(present_state)
-        IDLE  : next_state = (idle_flag & (start_wr_posedge | start_re_posedge))        ? READY : IDLE;
+        IDLE  : next_state = (idle_flag  & (start_wr_posedge | start_re_posedge))       ? READY : IDLE;
         READY : next_state = (ready_flag & (ready_cnt == 10'd10))                       ? WRITE : READY;
         WRITE : next_state = (write_flag & (sclk_index == 6'd48) & (sclk_cnt == 10'b0)) ? DONE : WRITE;
-        DONE  : next_state = (done_flag && (done_cnt == 4'd15))                         ? IDLE : DONE;
+        DONE  : next_state = (done_flag  & (done_cnt == 4'd15))                         ? IDLE : DONE;
     endcase
 end
 
@@ -140,11 +140,11 @@ always@(negedge n_reset, posedge clock)
     else
         mosi <= (idle_flag) ? 1'b0 :
                 (ready_flag & (ready_cnt == 10'd10)) ? ((rw_flag) ? SLAVE_IDW[7] : SLAVE_IDR[7]) :
-                (write_flag & (sclk_index == 6'd1) & (sclk_cnt == 10'b0)) ? ((rw_flag) ? SLAVE_IDW[6] : SLAVE_IDR[6]) :
-                (write_flag & (sclk_index == 6'd3) & (sclk_cnt == 10'b0)) ? ((rw_flag) ? SLAVE_IDW[5] : SLAVE_IDR[5]) :
-                (write_flag & (sclk_index == 6'd5) & (sclk_cnt == 10'b0)) ? ((rw_flag) ? SLAVE_IDW[4] : SLAVE_IDR[4]) :
-                (write_flag & (sclk_index == 6'd7) & (sclk_cnt == 10'b0)) ? ((rw_flag) ? SLAVE_IDW[3] : SLAVE_IDR[3]) :
-                (write_flag & (sclk_index == 6'd9) & (sclk_cnt == 10'b0)) ? ((rw_flag) ? SLAVE_IDW[2] : SLAVE_IDR[2]) :
+                (write_flag & (sclk_index == 6'd1)  & (sclk_cnt == 10'b0)) ? ((rw_flag) ? SLAVE_IDW[6] : SLAVE_IDR[6]) :
+                (write_flag & (sclk_index == 6'd3)  & (sclk_cnt == 10'b0)) ? ((rw_flag) ? SLAVE_IDW[5] : SLAVE_IDR[5]) :
+                (write_flag & (sclk_index == 6'd5)  & (sclk_cnt == 10'b0)) ? ((rw_flag) ? SLAVE_IDW[4] : SLAVE_IDR[4]) :
+                (write_flag & (sclk_index == 6'd7)  & (sclk_cnt == 10'b0)) ? ((rw_flag) ? SLAVE_IDW[3] : SLAVE_IDR[3]) :
+                (write_flag & (sclk_index == 6'd9)  & (sclk_cnt == 10'b0)) ? ((rw_flag) ? SLAVE_IDW[2] : SLAVE_IDR[2]) :
                 (write_flag & (sclk_index == 6'd11) & (sclk_cnt == 10'b0)) ? ((rw_flag) ? SLAVE_IDW[1] : SLAVE_IDR[1]) :
                 (write_flag & (sclk_index == 6'd13) & (sclk_cnt == 10'b0)) ? ((rw_flag) ? SLAVE_IDW[0] : SLAVE_IDR[0]) :
                 (write_flag & (sclk_index == 6'd15) & (sclk_cnt == 10'b0)) ? addr[7] :
