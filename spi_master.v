@@ -42,7 +42,7 @@ always@(*) begin
     next_state = present_state;
     case(present_state)
         IDLE  : next_state = (idle_flag  & (start_wr_posedge | start_re_posedge))       ? READY : IDLE;
-        READY : next_state = (ready_flag & (ready_cnt == 10'd10))                       ? WRITE : READY;
+        READY : next_state = (ready_flag & (ready_cnt == freq))                         ? WRITE : READY;
         WRITE : next_state = (write_flag & (sclk_index == 6'd48) & (sclk_cnt == 10'b0)) ? DONE : WRITE;
         DONE  : next_state = (done_flag  & (done_cnt == 4'd15))                         ? IDLE : DONE;
     endcase
@@ -122,7 +122,7 @@ always@(negedge n_reset, posedge clock)
         sclk <= 0;
     else
         sclk <= (~write_flag) ? 1'b0 :
-                ((sclk_index < 6'd48) && (sclk_cnt == 10'b0)) ? ~sclk : sclk;
+                ((sclk_index < 6'd48) & (sclk_cnt == 10'b0)) ? ~sclk : sclk;
 
 // ss: Slave Select (Active Low)
 always@(negedge n_reset, posedge clock)
@@ -130,7 +130,7 @@ always@(negedge n_reset, posedge clock)
         ss <= 1;
     else
         ss <= (idle_flag) ? 1'b1 :
-              (ready_flag & (ready_cnt == 10'd10)) ? 1'b0 :
+              (ready_flag & (ready_cnt == 10'd0)) ? 1'b0 :
               (done_flag  & (done_cnt == 4'd15))   ? 1'b1 : ss;
 
 // mosi
