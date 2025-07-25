@@ -5,8 +5,8 @@ module btn_in(
     output reg          btn_out
 );
 
-parameter max_cnt = 20'd1000; // for simulation
-// paramter max_cnt = 20'd1000000 -> 10ms
+// parameter max_cnt = 20'd1000; // for simulation
+parameter max_cnt = 20'd1000000; // 10ms
 
 reg [19:0] cnt;
 always@(negedge n_reset, posedge clock)
