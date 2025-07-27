@@ -1,4 +1,4 @@
-// Define Slave internal register
+// Define slave internal register
 `define SLAVE_REG1 8'h10
 `define SLAVE_REG2 8'h11
 `define SLAVE_REG3 8'h12
@@ -6,18 +6,18 @@
 
 module spi_slave(
     input           clock,
-    input           n_reset, 
+    input           n_reset,
     input           ss,
     input           sclk,
     input           mosi,
-    output  reg     miso
+    output reg      miso
 );
 
 // Parameter
 parameter SLAVE_IDW = 8'hff;
 parameter SLAVE_IDR = 8'h00;
 
-// Define States
+// Define states
 reg [2:0] present_state, next_state;
 parameter IDLE    = 3'd0;
 parameter SLAVEID = 3'd1;
@@ -47,21 +47,18 @@ always@(negedge n_reset, posedge clock)
 always@(*) begin
     next_state = present_state;
     case(present_state)
-        IDLE    : next_state = (idle_flag & ss_negedge)                 ? SLAVEID : IDLE;
+        IDLE    : next_state = (idle_flag & ss_negedge) ? SLAVEID : IDLE;
         SLAVEID : next_state = (slaveid_flag & (sla_sclk_neg_cnt == 4'd8)) ? 
-                               ((slave_id == SLAVE_IDW) ? WADDR : 
-                                (slave_id == SLAVE_IDR) ? RADDR : IDLE) : SLAVEID;
+                               ((slave_id == SLAVE_IDW) ? WADDR : (slave_id == SLAVE_IDR) ? RADDR : IDLE) : SLAVEID;
         WADDR   : next_state = (waddr_flag & (wa_sclk_neg_cnt == 4'd8)) ? WDATA : WADDR;
-        WDATA   : next_state = (wdata_flag & ss_posedge)                ? DONE : WDATA;
-        RADDR   : next_state = (raddr_flag & ra_sclk_neg_cnt == 4'd8)   ? RDATA : RADDR;
-        RDATA   : next_state = (rdata_flag & ss_posedge)                ? DONE : RDATA;
-        DONE    : next_state = (done_flag & (done_cnt == 2'd3))         ? IDLE : DONE;
+        WDATA   : next_state = (wdata_flag & ss_posedge) ? DONE : WDATA;
+        RADDR   : next_state = (raddr_flag & (ra_sclk_neg_cnt == 4'd8)) ? RDATA : RADDR;
+        RDATA   : next_state = (rdata_flag & ss_posedge) ? DONE : RDATA;
+        DONE    : next_state = (done_flag & (done_cnt == 4'd15)) ? IDLE : DONE;
     endcase
 end
 
-
-// ss_posedge: IDLE -> SLAVEID
-// ss_negedge: DONE -> IDLE
+// ss positive, negative edge
 reg ss_1d, ss_2d;
 wire ss_posedge = ss_1d & ~ss_2d;
 wire ss_negedge = ~ss_1d & ss_2d;
@@ -101,7 +98,7 @@ always@(negedge n_reset, posedge clock)
         mosi_2d <= mosi_1d;
     end
 
-// Count sclk_negedge for slaveid state
+// sclk_negedge counter for SLAVEID state
 reg [3:0] sla_sclk_neg_cnt;
 always@(negedge n_reset, posedge clock)
     if(!n_reset)
@@ -110,23 +107,23 @@ always@(negedge n_reset, posedge clock)
         sla_sclk_neg_cnt <= (~slaveid_flag) ? 4'b0 :
                             (sclk_negedge) ? sla_sclk_neg_cnt + 1 : sla_sclk_neg_cnt;
 
-// read slaveid from mosi
+// slave_id from mosi
 reg [7:0] slave_id;
 always@(negedge n_reset, posedge clock)
     if(!n_reset)
         slave_id <= 0;
     else begin
-        slave_id[7] <= (idle_flag) ? 8'b0 : (slaveid_flag & sclk_posedge & (sla_sclk_neg_cnt == 4'd0)) ? mosi_2d : slave_id[7];
-        slave_id[6] <= (idle_flag) ? 8'b0 : (slaveid_flag & sclk_posedge & (sla_sclk_neg_cnt == 4'd1)) ? mosi_2d : slave_id[6];
-        slave_id[5] <= (idle_flag) ? 8'b0 : (slaveid_flag & sclk_posedge & (sla_sclk_neg_cnt == 4'd2)) ? mosi_2d : slave_id[5];
-        slave_id[4] <= (idle_flag) ? 8'b0 : (slaveid_flag & sclk_posedge & (sla_sclk_neg_cnt == 4'd3)) ? mosi_2d : slave_id[4];
-        slave_id[3] <= (idle_flag) ? 8'b0 : (slaveid_flag & sclk_posedge & (sla_sclk_neg_cnt == 4'd4)) ? mosi_2d : slave_id[3];
-        slave_id[2] <= (idle_flag) ? 8'b0 : (slaveid_flag & sclk_posedge & (sla_sclk_neg_cnt == 4'd5)) ? mosi_2d : slave_id[2];
-        slave_id[1] <= (idle_flag) ? 8'b0 : (slaveid_flag & sclk_posedge & (sla_sclk_neg_cnt == 4'd6)) ? mosi_2d : slave_id[1];
-        slave_id[0] <= (idle_flag) ? 8'b0 : (slaveid_flag & sclk_posedge & (sla_sclk_neg_cnt == 4'd7)) ? mosi_2d : slave_id[0];
+        slave_id[7] <= (idle_flag) ? 1'b0 : (slaveid_flag & sclk_posedge & (sla_sclk_neg_cnt == 4'd0)) ? mosi_2d : slave_id[7];
+        slave_id[6] <= (idle_flag) ? 1'b0 : (slaveid_flag & sclk_posedge & (sla_sclk_neg_cnt == 4'd1)) ? mosi_2d : slave_id[6];
+        slave_id[5] <= (idle_flag) ? 1'b0 : (slaveid_flag & sclk_posedge & (sla_sclk_neg_cnt == 4'd2)) ? mosi_2d : slave_id[5];
+        slave_id[4] <= (idle_flag) ? 1'b0 : (slaveid_flag & sclk_posedge & (sla_sclk_neg_cnt == 4'd3)) ? mosi_2d : slave_id[4];
+        slave_id[3] <= (idle_flag) ? 1'b0 : (slaveid_flag & sclk_posedge & (sla_sclk_neg_cnt == 4'd4)) ? mosi_2d : slave_id[3];
+        slave_id[2] <= (idle_flag) ? 1'b0 : (slaveid_flag & sclk_posedge & (sla_sclk_neg_cnt == 4'd5)) ? mosi_2d : slave_id[2];
+        slave_id[1] <= (idle_flag) ? 1'b0 : (slaveid_flag & sclk_posedge & (sla_sclk_neg_cnt == 4'd6)) ? mosi_2d : slave_id[1];
+        slave_id[0] <= (idle_flag) ? 1'b0 : (slaveid_flag & sclk_posedge & (sla_sclk_neg_cnt == 4'd7)) ? mosi_2d : slave_id[0];
     end
 
-// Count sclk_negedge for waddr state
+// sclk_negedge counter for WADDR state
 reg [3:0] wa_sclk_neg_cnt;
 always@(negedge n_reset, posedge clock)
     if(!n_reset)
@@ -141,20 +138,20 @@ always@(negedge n_reset, posedge clock)
     if(!n_reset)
         waddr <= 0;
     else begin
-        waddr[7] <= (idle_flag) ? 8'b0 : (waddr_flag & sclk_posedge & (wa_sclk_neg_cnt == 4'd0)) ? mosi_2d : waddr[7];
-        waddr[6] <= (idle_flag) ? 8'b0 : (waddr_flag & sclk_posedge & (wa_sclk_neg_cnt == 4'd1)) ? mosi_2d : waddr[6];
-        waddr[5] <= (idle_flag) ? 8'b0 : (waddr_flag & sclk_posedge & (wa_sclk_neg_cnt == 4'd2)) ? mosi_2d : waddr[5];
-        waddr[4] <= (idle_flag) ? 8'b0 : (waddr_flag & sclk_posedge & (wa_sclk_neg_cnt == 4'd3)) ? mosi_2d : waddr[4];
-        waddr[3] <= (idle_flag) ? 8'b0 : (waddr_flag & sclk_posedge & (wa_sclk_neg_cnt == 4'd4)) ? mosi_2d : waddr[3];
-        waddr[2] <= (idle_flag) ? 8'b0 : (waddr_flag & sclk_posedge & (wa_sclk_neg_cnt == 4'd5)) ? mosi_2d : waddr[2];
-        waddr[1] <= (idle_flag) ? 8'b0 : (waddr_flag & sclk_posedge & (wa_sclk_neg_cnt == 4'd6)) ? mosi_2d : waddr[1];
-        waddr[0] <= (idle_flag) ? 8'b0 : (waddr_flag & sclk_posedge & (wa_sclk_neg_cnt == 4'd7)) ? mosi_2d : waddr[0];
+        waddr[7] <= (idle_flag) ? 1'b0 : (waddr_flag & sclk_posedge & (wa_sclk_neg_cnt == 4'd0)) ? mosi_2d : waddr[7];
+        waddr[6] <= (idle_flag) ? 1'b0 : (waddr_flag & sclk_posedge & (wa_sclk_neg_cnt == 4'd1)) ? mosi_2d : waddr[6];
+        waddr[5] <= (idle_flag) ? 1'b0 : (waddr_flag & sclk_posedge & (wa_sclk_neg_cnt == 4'd2)) ? mosi_2d : waddr[5];
+        waddr[4] <= (idle_flag) ? 1'b0 : (waddr_flag & sclk_posedge & (wa_sclk_neg_cnt == 4'd3)) ? mosi_2d : waddr[4];
+        waddr[3] <= (idle_flag) ? 1'b0 : (waddr_flag & sclk_posedge & (wa_sclk_neg_cnt == 4'd4)) ? mosi_2d : waddr[3];
+        waddr[2] <= (idle_flag) ? 1'b0 : (waddr_flag & sclk_posedge & (wa_sclk_neg_cnt == 4'd5)) ? mosi_2d : waddr[2];
+        waddr[1] <= (idle_flag) ? 1'b0 : (waddr_flag & sclk_posedge & (wa_sclk_neg_cnt == 4'd6)) ? mosi_2d : waddr[1];
+        waddr[0] <= (idle_flag) ? 1'b0 : (waddr_flag & sclk_posedge & (wa_sclk_neg_cnt == 4'd7)) ? mosi_2d : waddr[0];
     end
 
-// Count sclk_negedge for wdata state
+// sclk_negedge counter for WDATA state
 reg [3:0] wd_sclk_neg_cnt;
 always@(negedge n_reset, posedge clock)
-    if(!n_reset)    
+    if(!n_reset)
         wd_sclk_neg_cnt <= 0;
     else
         wd_sclk_neg_cnt <= (~wdata_flag) ? 4'b0 :
@@ -166,42 +163,42 @@ always@(negedge n_reset, posedge clock)
     if(!n_reset)
         wdata <= 0;
     else begin
-        wdata[7] <= (idle_flag) ? 8'b0 : (wdata_flag & sclk_posedge & (wd_sclk_neg_cnt == 4'd0)) ? mosi_2d : wdata[7];
-        wdata[6] <= (idle_flag) ? 8'b0 : (wdata_flag & sclk_posedge & (wd_sclk_neg_cnt == 4'd1)) ? mosi_2d : wdata[6];
-        wdata[5] <= (idle_flag) ? 8'b0 : (wdata_flag & sclk_posedge & (wd_sclk_neg_cnt == 4'd2)) ? mosi_2d : wdata[5];
-        wdata[4] <= (idle_flag) ? 8'b0 : (wdata_flag & sclk_posedge & (wd_sclk_neg_cnt == 4'd3)) ? mosi_2d : wdata[4];
-        wdata[3] <= (idle_flag) ? 8'b0 : (wdata_flag & sclk_posedge & (wd_sclk_neg_cnt == 4'd4)) ? mosi_2d : wdata[3];
-        wdata[2] <= (idle_flag) ? 8'b0 : (wdata_flag & sclk_posedge & (wd_sclk_neg_cnt == 4'd5)) ? mosi_2d : wdata[2];
-        wdata[1] <= (idle_flag) ? 8'b0 : (wdata_flag & sclk_posedge & (wd_sclk_neg_cnt == 4'd6)) ? mosi_2d : wdata[1];
-        wdata[0] <= (idle_flag) ? 8'b0 : (wdata_flag & sclk_posedge & (wd_sclk_neg_cnt == 4'd7)) ? mosi_2d : wdata[0];
+        wdata[7] <= (idle_flag) ? 1'b0 : (wdata_flag & sclk_posedge & (wd_sclk_neg_cnt == 4'd0)) ? mosi_2d : wdata[7];
+        wdata[6] <= (idle_flag) ? 1'b0 : (wdata_flag & sclk_posedge & (wd_sclk_neg_cnt == 4'd1)) ? mosi_2d : wdata[6];
+        wdata[5] <= (idle_flag) ? 1'b0 : (wdata_flag & sclk_posedge & (wd_sclk_neg_cnt == 4'd2)) ? mosi_2d : wdata[5];
+        wdata[4] <= (idle_flag) ? 1'b0 : (wdata_flag & sclk_posedge & (wd_sclk_neg_cnt == 4'd3)) ? mosi_2d : wdata[4];
+        wdata[3] <= (idle_flag) ? 1'b0 : (wdata_flag & sclk_posedge & (wd_sclk_neg_cnt == 4'd4)) ? mosi_2d : wdata[3];
+        wdata[2] <= (idle_flag) ? 1'b0 : (wdata_flag & sclk_posedge & (wd_sclk_neg_cnt == 4'd5)) ? mosi_2d : wdata[2];
+        wdata[1] <= (idle_flag) ? 1'b0 : (wdata_flag & sclk_posedge & (wd_sclk_neg_cnt == 4'd6)) ? mosi_2d : wdata[1];
+        wdata[0] <= (idle_flag) ? 1'b0 : (wdata_flag & sclk_posedge & (wd_sclk_neg_cnt == 4'd7)) ? mosi_2d : wdata[0];
     end
 
-// Counter sclk_negedge for raddr state
+// sclk_negedge counter for RADDR state
 reg [3:0] ra_sclk_neg_cnt;
 always@(negedge n_reset, posedge clock)
     if(!n_reset)
         ra_sclk_neg_cnt <= 0;
-    else    
+    else
         ra_sclk_neg_cnt <= (~raddr_flag) ? 4'b0 :
                            (sclk_negedge) ? ra_sclk_neg_cnt + 1 : ra_sclk_neg_cnt;
 
 // raddr from mosi
-reg[7:0] raddr;
+reg [7:0] raddr;
 always@(negedge n_reset, posedge clock)
     if(!n_reset)
         raddr <= 0;
     else begin
-        raddr[7] <= (idle_flag) ? 8'b0 : (raddr_flag & sclk_posedge & (ra_sclk_neg_cnt == 4'd0)) ? mosi_2d : raddr[7];
-        raddr[6] <= (idle_flag) ? 8'b0 : (raddr_flag & sclk_posedge & (ra_sclk_neg_cnt == 4'd1)) ? mosi_2d : raddr[6];
-        raddr[5] <= (idle_flag) ? 8'b0 : (raddr_flag & sclk_posedge & (ra_sclk_neg_cnt == 4'd2)) ? mosi_2d : raddr[5];
-        raddr[4] <= (idle_flag) ? 8'b0 : (raddr_flag & sclk_posedge & (ra_sclk_neg_cnt == 4'd3)) ? mosi_2d : raddr[4];
-        raddr[3] <= (idle_flag) ? 8'b0 : (raddr_flag & sclk_posedge & (ra_sclk_neg_cnt == 4'd4)) ? mosi_2d : raddr[3];
-        raddr[2] <= (idle_flag) ? 8'b0 : (raddr_flag & sclk_posedge & (ra_sclk_neg_cnt == 4'd5)) ? mosi_2d : raddr[2];
-        raddr[1] <= (idle_flag) ? 8'b0 : (raddr_flag & sclk_posedge & (ra_sclk_neg_cnt == 4'd6)) ? mosi_2d : raddr[1];
-        raddr[0] <= (idle_flag) ? 8'b0 : (raddr_flag & sclk_posedge & (ra_sclk_neg_cnt == 4'd7)) ? mosi_2d : raddr[0];
+        raddr[7] <= (idle_flag) ? 1'b0 : (raddr_flag & sclk_posedge & (ra_sclk_neg_cnt == 4'd0)) ? mosi_2d : raddr[7];
+        raddr[6] <= (idle_flag) ? 1'b0 : (raddr_flag & sclk_posedge & (ra_sclk_neg_cnt == 4'd1)) ? mosi_2d : raddr[6];
+        raddr[5] <= (idle_flag) ? 1'b0 : (raddr_flag & sclk_posedge & (ra_sclk_neg_cnt == 4'd2)) ? mosi_2d : raddr[5];
+        raddr[4] <= (idle_flag) ? 1'b0 : (raddr_flag & sclk_posedge & (ra_sclk_neg_cnt == 4'd3)) ? mosi_2d : raddr[4];
+        raddr[3] <= (idle_flag) ? 1'b0 : (raddr_flag & sclk_posedge & (ra_sclk_neg_cnt == 4'd4)) ? mosi_2d : raddr[3];
+        raddr[2] <= (idle_flag) ? 1'b0 : (raddr_flag & sclk_posedge & (ra_sclk_neg_cnt == 4'd5)) ? mosi_2d : raddr[2];
+        raddr[1] <= (idle_flag) ? 1'b0 : (raddr_flag & sclk_posedge & (ra_sclk_neg_cnt == 4'd6)) ? mosi_2d : raddr[1];
+        raddr[0] <= (idle_flag) ? 1'b0 : (raddr_flag & sclk_posedge & (ra_sclk_neg_cnt == 4'd7)) ? mosi_2d : raddr[0];
     end
 
-// Count sclk_negedge for rdata state
+// sclk_negedge counter for RDATA state 
 reg [3:0] rd_sclk_neg_cnt;
 always@(negedge n_reset, posedge clock)
     if(!n_reset)
@@ -209,7 +206,6 @@ always@(negedge n_reset, posedge clock)
     else
         rd_sclk_neg_cnt <= (~rdata_flag) ? 4'b0 :
                            (sclk_negedge) ? rd_sclk_neg_cnt + 1 : rd_sclk_neg_cnt;
-
 // sclk_negedge_1d
 reg sclk_negedge_1d;
 always@(negedge n_reset, posedge clock)
@@ -217,14 +213,6 @@ always@(negedge n_reset, posedge clock)
         sclk_negedge_1d <= 0;
     else
         sclk_negedge_1d <= sclk_negedge;
-
-// sclk_posedge_1d
-reg sclk_posedge_1d;
-always@(negedge n_reset, posedge clock)
-    if(!n_reset)
-        sclk_posedge_1d <= 0;
-    else
-        sclk_posedge_1d <= sclk_posedge;
 
 // miso
 always@(negedge n_reset, posedge clock)
@@ -241,15 +229,15 @@ always@(negedge n_reset, posedge clock)
                 (sclk_negedge_1d & (rd_sclk_neg_cnt == 4'd6)) ? rdata[1] :
                 (sclk_negedge_1d & (rd_sclk_neg_cnt == 4'd7)) ? rdata[0] : miso;
 
-// done state counter
-reg [1:0] done_cnt;
+// DONE state counter
+reg [3:0] done_cnt;
 always@(negedge n_reset, posedge clock)
-    if(!n_reset)    
+    if(!n_reset)
         done_cnt <= 0;
-    else    
-        done_cnt <= (done_flag) ? done_cnt + 1 : 2'b0;
+    else
+        done_cnt <= (done_flag) ? done_cnt + 1 : 4'b0;
 
-// write data to slave internal register
+// depending on waddr, write data to slave internal register
 reg [7:0] slave_reg1, slave_reg2, slave_reg3, slave_reg4;
 always@(negedge n_reset, posedge clock)
     if(!n_reset) begin
@@ -265,6 +253,14 @@ always@(negedge n_reset, posedge clock)
         slave_reg4 <= (done_flag & (waddr == `SLAVE_REG4)) ? wdata : slave_reg4;
     end
 
+// sclk_posedge_1d
+reg sclk_posedge_1d;
+always@(negedge n_reset, posedge clock)
+    if(!n_reset)
+        sclk_posedge_1d <= 0;
+    else
+        sclk_posedge_1d <= sclk_posedge;
+
 // read data from slave internal register
 reg [7:0] rdata;
 always@(negedge n_reset, posedge clock)
@@ -272,9 +268,9 @@ always@(negedge n_reset, posedge clock)
         rdata <= 0;
     else
         rdata <= (idle_flag) ? 8'b0 :
-                 (raddr_flag & sclk_posedge_1d & (ra_sclk_neg_cnt == 4'd7) & (raddr == `SLAVE_REG1)) ? slave_reg1 :
-                 (raddr_flag & sclk_posedge_1d & (ra_sclk_neg_cnt == 4'd7) & (raddr == `SLAVE_REG2)) ? slave_reg2 :
-                 (raddr_flag & sclk_posedge_1d & (ra_sclk_neg_cnt == 4'd7) & (raddr == `SLAVE_REG3)) ? slave_reg3 :
-                 (raddr_flag & sclk_posedge_1d & (ra_sclk_neg_cnt == 4'd7) & (raddr == `SLAVE_REG4)) ? slave_reg4 : rdata;
+                 (raddr_flag & sclk_posedge & (ra_sclk_neg_cnt == 4'd7) & (raddr == `SLAVE_REG1)) ? slave_reg1 :
+                 (raddr_flag & sclk_posedge & (ra_sclk_neg_cnt == 4'd7) & (raddr == `SLAVE_REG2)) ? slave_reg2 :
+                 (raddr_flag & sclk_posedge & (ra_sclk_neg_cnt == 4'd7) & (raddr == `SLAVE_REG3)) ? slave_reg3 :
+                 (raddr_flag & sclk_posedge & (ra_sclk_neg_cnt == 4'd7) & (raddr == `SLAVE_REG4)) ? slave_reg4 : rdata;
 
 endmodule
