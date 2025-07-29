@@ -54,7 +54,7 @@ always@(*) begin
         WDATA   : next_state = (wdata_flag & ss_posedge) ? DONE : WDATA;
         RADDR   : next_state = (raddr_flag & (ra_sclk_neg_cnt == 4'd8)) ? RDATA : RADDR;
         RDATA   : next_state = (rdata_flag & ss_posedge) ? DONE : RDATA;
-        DONE    : next_state = (done_flag & (done_cnt == 4'd15)) ? IDLE : DONE;
+        DONE    : next_state = (done_flag & (done_cnt == 4'd3)) ? IDLE : DONE;
     endcase
 end
 
@@ -230,7 +230,7 @@ always@(negedge n_reset, posedge clock)
                 (sclk_negedge_1d & (rd_sclk_neg_cnt == 4'd7)) ? rdata[0] : miso;
 
 // DONE state counter
-reg [3:0] done_cnt;
+reg [1:0] done_cnt;
 always@(negedge n_reset, posedge clock)
     if(!n_reset)
         done_cnt <= 0;
