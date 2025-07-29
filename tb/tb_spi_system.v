@@ -1,3 +1,4 @@
+/* testbench for spi master-slave communication */
 module tb_spi_system;
 
 reg        clock, n_reset;
