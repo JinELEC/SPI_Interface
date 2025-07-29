@@ -6,10 +6,11 @@ module spi_master(
     input               start_re, // trigger read
     input       [7:0]   wdata,
     input       [7:0]   addr,
-    output  reg [7:0]   rdata, // read data from slave
+    output  reg [7:0]   rdata, // data from slave
     output  reg         mosi,
     output  reg         ss,
     output  reg         sclk,
+    output  reg         done,
     input               miso
 );
 
@@ -182,5 +183,13 @@ always@(negedge n_reset, posedge clock)
         done_cnt <= 0;
     else
         done_cnt <= (done_flag) ? done_cnt + 1 : 4'b0;
+
+// done
+always@(negedge n_reset, posedge clock)
+    if(!n_reset)
+        done <= 0;
+    else
+        done <= (start_wr_posedge | start_re_posedge) ? 1'b0 :
+                (done_flag & (done_cnt == 4'd15)) ? 1'b1 : done;
 
 endmodule
