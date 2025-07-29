@@ -268,9 +268,9 @@ always@(negedge n_reset, posedge clock)
         rdata <= 0;
     else
         rdata <= (idle_flag) ? 8'b0 :
-                 (raddr_flag & sclk_posedge & (ra_sclk_neg_cnt == 4'd7) & (raddr == `SLAVE_REG1)) ? slave_reg1 :
-                 (raddr_flag & sclk_posedge & (ra_sclk_neg_cnt == 4'd7) & (raddr == `SLAVE_REG2)) ? slave_reg2 :
-                 (raddr_flag & sclk_posedge & (ra_sclk_neg_cnt == 4'd7) & (raddr == `SLAVE_REG3)) ? slave_reg3 :
-                 (raddr_flag & sclk_posedge & (ra_sclk_neg_cnt == 4'd7) & (raddr == `SLAVE_REG4)) ? slave_reg4 : rdata;
+                 (raddr_flag & sclk_posedge_1d & (ra_sclk_neg_cnt == 4'd7) & (raddr == `SLAVE_REG1)) ? slave_reg1 :
+                 (raddr_flag & sclk_posedge_1d & (ra_sclk_neg_cnt == 4'd7) & (raddr == `SLAVE_REG2)) ? slave_reg2 :
+                 (raddr_flag & sclk_posedge_1d & (ra_sclk_neg_cnt == 4'd7) & (raddr == `SLAVE_REG3)) ? slave_reg3 :
+                 (raddr_flag & sclk_posedge_1d & (ra_sclk_neg_cnt == 4'd7) & (raddr == `SLAVE_REG4)) ? slave_reg4 : rdata;
 
 endmodule
