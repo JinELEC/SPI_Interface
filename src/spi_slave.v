@@ -18,7 +18,7 @@ parameter SLAVE_IDW = 8'hff;
 parameter SLAVE_IDR = 8'h00;
 
 // Define states
-reg [2:0] present_state, next_state;
+reg [2:0] state;
 parameter IDLE    = 3'd0;
 parameter SLAVEID = 3'd1;
 parameter WADDR   = 3'd2;
@@ -28,35 +28,28 @@ parameter RDATA   = 3'd5;
 parameter DONE    = 3'd6;
 
 // State flag
-wire idle_flag    = (present_state == IDLE)    ? 1'b1 : 1'b0;
-wire slaveid_flag = (present_state == SLAVEID) ? 1'b1 : 1'b0;
-wire waddr_flag   = (present_state == WADDR)   ? 1'b1 : 1'b0;
-wire wdata_flag   = (present_state == WDATA)   ? 1'b1 : 1'b0;
-wire raddr_flag   = (present_state == RADDR)   ? 1'b1 : 1'b0;
-wire rdata_flag   = (present_state == RDATA)   ? 1'b1 : 1'b0;
-wire done_flag    = (present_state == DONE)    ? 1'b1 : 1'b0;
-
-// State update
-always@(negedge n_reset, posedge clock)
-    if(!n_reset)
-        present_state <= IDLE;
-    else
-        present_state <= next_state;
+wire idle_flag    = (state == IDLE)    ? 1'b1 : 1'b0;
+wire slaveid_flag = (state == SLAVEID) ? 1'b1 : 1'b0;
+wire waddr_flag   = (state == WADDR)   ? 1'b1 : 1'b0;
+wire wdata_flag   = (state == WDATA)   ? 1'b1 : 1'b0;
+wire raddr_flag   = (state == RADDR)   ? 1'b1 : 1'b0;
+wire rdata_flag   = (state == RDATA)   ? 1'b1 : 1'b0;
+wire done_flag    = (state == DONE)    ? 1'b1 : 1'b0;
 
 // State transition
-always@(*) begin
-    next_state = present_state;
-    case(present_state)
-        IDLE    : next_state = (idle_flag & ss_negedge) ? SLAVEID : IDLE;
-        SLAVEID : next_state = (slaveid_flag & (sla_sclk_neg_cnt == 4'd8)) ? 
-                               ((slave_id == SLAVE_IDW) ? WADDR : (slave_id == SLAVE_IDR) ? RADDR : IDLE) : SLAVEID;
-        WADDR   : next_state = (waddr_flag & (wa_sclk_neg_cnt == 4'd8)) ? WDATA : WADDR;
-        WDATA   : next_state = (wdata_flag & ss_posedge) ? DONE : WDATA;
-        RADDR   : next_state = (raddr_flag & (ra_sclk_neg_cnt == 4'd8)) ? RDATA : RADDR;
-        RDATA   : next_state = (rdata_flag & ss_posedge) ? DONE : RDATA;
-        DONE    : next_state = (done_flag & (done_cnt == 4'd3)) ? IDLE : DONE;
-    endcase
-end
+always@(negedge n_reset, posedge clock)
+    if(!n_reset)
+        state <= 3'b0;
+    else
+        state <= (idle_flag & ss_negedge) ? SLAVEID :
+                 (slaveid_flag & (sla_sclk_neg_cnt == 4'd8)) ?
+                 ((slave_id == SLAVE_IDW) ? WADDR : (slave_id == SLAVE_IDR) ? RADDR : IDLE) :
+                 (waddr_flag & (wa_sclk_neg_cnt == 4'd8)) ? WDATA :
+                 (wdata_flag & ss_posedge) ? DONE :
+                 (raddr_flag & (ra_sclk_neg_cnt == 4'd8)) ? RDATA :
+                 (rdata_flag & ss_posedge) ? DONE :
+                 (done_flag & (done_cnt == 4'd3)) ? IDLE : state;
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // ss positive, negative edge
 reg ss_1d, ss_2d;
