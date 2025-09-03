@@ -19,35 +19,28 @@ parameter SLAVE_IDW = 8'hff;
 parameter SLAVE_IDR = 8'h00;
 
 // Define states
-reg [1:0] present_state, next_state;
+reg [1:0] state;
 parameter IDLE  = 2'd0;
 parameter READY = 2'd1;
 parameter WRITE = 2'd2;
 parameter DONE  = 2'd3;
 
 // State flag
-wire idle_flag  = (present_state == IDLE)  ? 1'b1 : 1'b0;
-wire ready_flag = (present_state == READY) ? 1'b1 : 1'b0;
-wire write_flag = (present_state == WRITE) ? 1'b1 : 1'b0;
-wire done_flag  = (present_state == DONE)  ? 1'b1 : 1'b0;
-
-// State update
-always@(negedge n_reset, posedge clock)
-    if(!n_reset)
-        present_state <= IDLE;
-    else 
-        present_state <= next_state;
+wire idle_flag  = (state == IDLE)  ? 1'b1 : 1'b0;
+wire ready_flag = (state == READY) ? 1'b1 : 1'b0;
+wire write_flag = (state == WRITE) ? 1'b1 : 1'b0;
+wire done_flag  = (state == DONE)  ? 1'b1 : 1'b0;
 
 // State transition
-always@(*) begin
-    next_state = present_state;
-    case(present_state)
-        IDLE  : next_state = (idle_flag  & (start_wr_posedge | start_re_posedge))       ? READY : IDLE;
-        READY : next_state = (ready_flag & (ready_cnt == freq))                         ? WRITE : READY;
-        WRITE : next_state = (write_flag & (sclk_index == 6'd48) & (sclk_cnt == 10'b0)) ? DONE : WRITE;
-        DONE  : next_state = (done_flag  & (done_cnt == 4'd15))                         ? IDLE : DONE;
-    endcase
-end
+always@(negedge n_reset, posedge clock)
+    if(!n_reset)
+        state <= 2'b0;
+    else
+        state <= (idle_flag  & (start_wr_posedge | start_re_posedge))       ? READY :
+                 (ready_flag & (ready_cnt == freq))                         ? WRITE :
+                 (write_flag & (sclk_index == 6'd48) & (sclk_cnt == 10'b0)) ? DONE :
+                 (done_flag  & (done_cnt == 4'd15))                         ? IDLE : state;
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // start_wr positive edge
 reg start_wr_1d, start_wr_2d;
